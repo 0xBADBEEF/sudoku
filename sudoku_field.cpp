@@ -32,17 +32,17 @@ void SudokuField::print()
     }
 }
 
-int SudokuField::get(std::pair<int, int> coord)
+int SudokuField::get(const std::pair<int, int>& coord)
 {
     return sudoku_field[std::get<0>(coord)][std::get<1>(coord)];
 }
 
-void SudokuField::set(std::pair<int, int> coord, int val)
+void SudokuField::set(const std::pair<int, int>& coord, int val)
 {
     sudoku_field[std::get<0>(coord)][std::get<1>(coord)] = val;
 }
 
-int SudokuField::coordinates_to_square(std::pair<int, int> coord)
+int SudokuField::coordinates_to_square(const std::pair<int, int>& coord)
 {
     if (std::get<1>(coord) < 3) {
         // 1, 4, 7
@@ -71,7 +71,7 @@ int SudokuField::coordinates_to_square(std::pair<int, int> coord)
     }
 }
 
-int SudokuField::num_in_square(std::pair<int, int> coord)
+int SudokuField::num_in_square(const std::pair<int, int>& coord)
 {
     int x = std::get<1>(coord);
     int y = std::get<0>(coord);

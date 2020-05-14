@@ -8,9 +8,9 @@ public:
     void add_line(int line[9]);
     void print();
 
-    int get(std::pair<int, int> coord);
-    void set(std::pair<int, int> coord, int val);
+    int get(const std::pair<int, int>& coord);
+    void set(const std::pair<int, int>& coord, int val);
 
-    static int coordinates_to_square(std::pair<int, int> coord);
-    static int num_in_square(std::pair<int, int> coord);
+    static int coordinates_to_square(const std::pair<int, int>& coord);
+    static int num_in_square(const std::pair<int, int>& coord);
 };

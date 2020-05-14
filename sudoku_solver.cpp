@@ -10,15 +10,47 @@ void SudokuSolver::reduce()
 {
     for (int i = 0; i < 9; i++) {
         for (int j = 0; j < 9; j++) {
+            auto coord = std::make_pair(i, j);
             for (int k = 0; k < 9; k++) {
-                if (horizont[i][k][j] && vertical[j][k][i] && square[SudokuField::coordinates_to_square(std::make_pair<>(i, j))][k][SudokuField::num_in_square(std::make_pair<>(i, j))])
+                if (horizont[i][k][j]
+                    && vertical[j][k][i]
+                    && square[SudokuField::coordinates_to_square(coord)][k][SudokuField::num_in_square(coord)])
                     continue;
 
                 horizont[i][k][j] = false;
                 vertical[j][k][i] = false;
-                square[SudokuField::coordinates_to_square(std::make_pair<>(i, j))][k][SudokuField::num_in_square(std::make_pair<>(i, j))] = false;
+                square[SudokuField::coordinates_to_square(coord)][k][SudokuField::num_in_square(coord)] = false;
             }
         }
+    }
+}
+
+void SudokuSolver::set_value(const std::pair<int, int>& coord, int val)
+{
+    int x = std::get<1>(coord);
+    int y = std::get<0>(coord);
+
+    solution[y][x] = true;
+    left_to_do--;
+
+    for (int k = 0; k < 9; k++) {
+        // set all cells for this to false, except target one
+        if (k != x)
+            horizont[x][val - 1][k] = false;
+
+        if (k != y)
+            vertical[y][val - 1][k] = false;
+
+        if (k != SudokuField::num_in_square(coord))
+            square[SudokuField::coordinates_to_square(coord)][val - 1][k] = false;
+
+        if (k != val - 1) {
+            // set this sell to false in all other candidates
+            horizont[y][k][x] = false;
+            vertical[x][k][y] = false;
+            square[SudokuField::coordinates_to_square(coord)][k][SudokuField::num_in_square(coord)] = false;
+        }
+
     }
 }
 
@@ -72,33 +104,12 @@ SudokuSolver::SudokuSolver(SudokuField &field) : field(field)
 
     for (int i = 0; i < 9; i++) {
         for (int j = 0; j < 9; j++) {
-            int val = field.get(std::make_pair<>(i, j));
+            int val = field.get(std::make_pair(i, j));
 
             if (val == 0)
                 continue;
 
-            solution[i][j] = true;
-            left_to_do--;
-
-            for (int k = 0; k < 9; k++) {
-                // set all cells for this to false, except target one
-                if (k != j)
-                    horizont[i][val - 1][k] = false;
-
-                if (k != i)
-                    vertical[j][val - 1][k] = false;
-
-                if (k != SudokuField::num_in_square(std::make_pair<>(i, j)))
-                    square[SudokuField::coordinates_to_square(std::make_pair<>(i, j))][val - 1][k] = false;
-
-                if (k != val - 1) {
-                    // set this sell to false in all other candidates
-                    horizont[i][k][j] = false;
-                    vertical[j][k][i] = false;
-                    square[SudokuField::coordinates_to_square(std::make_pair<>(i, j))][k][SudokuField::num_in_square(std::make_pair<>(i, j))] = false;
-                }
-
-            }
+            set_value(std::make_pair(i, j), val);
         }
     }
 
@@ -123,46 +134,30 @@ void SudokuSolver::solve()
                     continue;
 
                 for (int k = 0; k < 9; k++) {
+                    auto coord = std::make_pair(i, j);
+
                     if (!horizont[i][k][j]
                         || !vertical[j][k][i]
-                        || !square[SudokuField::coordinates_to_square(std::make_pair<>(i, j))][k][SudokuField::num_in_square(std::make_pair<>(i, j))]) {
+                        || !square[SudokuField::coordinates_to_square(coord)][k][SudokuField::num_in_square(coord)]) {
                         // if somewhere is impossible - continue
                         continue;
                     }
 
                     if (is_only_place_in_horizon(i, k)
                         || is_only_place_in_vertical(j, k)
-                        || is_only_place_in_square(SudokuField::coordinates_to_square(std::make_pair<>(i, j)), k)) {
+                        || is_only_place_in_square(SudokuField::coordinates_to_square(coord), k)) {
                         // it is the only possible place somewhere
                         // so set it!
 
-                        field.set(std::make_pair(i, j), k + 1);
-                        solution[i][j] = true;
-                        left_to_do--;
-
-                        for (int m = 0; m < 9; m++) {
-                            if (m != k) {
-                                // set this sell to false in all other candidates
-                                horizont[i][m][j] = false;
-                                vertical[j][m][i] = false;
-                                square[SudokuField::coordinates_to_square(std::make_pair<>(i, j))][m][SudokuField::num_in_square(std::make_pair<>(i, j))] = false;
-                            }
-                            if (m != j)
-                                horizont[i][k][m] = false;
-
-                            if (m != i)
-                                vertical[j][k][m] = false;
-
-                            if (m != SudokuField::num_in_square(std::make_pair<>(i, j)))
-                                square[SudokuField::coordinates_to_square(std::make_pair<>(i, j))][k][m] = false;
-                        }
+                        field.set(coord, k + 1);
+                        set_value(coord, k + 1);
                     }
                 }
             }
         }
 
         if (cur_left == left_to_do) {
-            std::cout << "Invalid sudoku! Have several solutions" << std::endl;
+            std::cout << "Invalid sudoku! Have several solutions. Cells left: " << left_to_do << std::endl;
             field.print();
             throw std::invalid_argument("Invalid sudoku!");
         }
