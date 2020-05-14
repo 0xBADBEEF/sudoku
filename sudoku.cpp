@@ -15,8 +15,6 @@ int main()
         field.add_line(line);
     }
 
-    field.print();
-
     std::shared_ptr<SudokuSolver> solver = std::make_shared<SudokuSolver>(field);
     solver->solve();
 

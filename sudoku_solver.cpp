@@ -36,10 +36,10 @@ void SudokuSolver::set_value(const std::pair<int, int>& coord, int val)
     for (int k = 0; k < 9; k++) {
         // set all cells for this to false, except target one
         if (k != x)
-            horizont[x][val - 1][k] = false;
+            horizont[y][val - 1][k] = false;
 
         if (k != y)
-            vertical[y][val - 1][k] = false;
+            vertical[x][val - 1][k] = false;
 
         if (k != SudokuField::num_in_square(coord))
             square[SudokuField::coordinates_to_square(coord)][val - 1][k] = false;
@@ -52,6 +52,55 @@ void SudokuSolver::set_value(const std::pair<int, int>& coord, int val)
         }
 
     }
+}
+
+void SudokuSolver::handle_bad_sudoku()
+{
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            if (solution[i][j])
+                continue;
+
+            for (int k = 0; k < 9; k++) {
+                auto coord = std::make_pair(i, j);
+
+                if (!horizont[i][k][j]
+                    || !vertical[j][k][i]
+                    || !square[SudokuField::coordinates_to_square(coord)][k][SudokuField::num_in_square(coord)])
+                    // if somewhere is impossible - continue
+                    continue;
+
+                if (check_new_field_with_value(coord, k + 1)) {
+                    field.set(coord, k + 1);
+                    set_value(coord, k + 1);
+
+                    // Crisis was resolved :)
+                    return;
+                }
+            }
+        }
+    }
+    // Nothing helped
+    std::cout << "Invalid sudoku! Have several solutions. Cells left: " << left_to_do << std::endl;
+    field.print();
+    throw std::invalid_argument("Invalid sudoku!");
+}
+
+bool SudokuSolver::check_new_field_with_value(const std::pair<int, int>& coord, int val)
+{
+    bool res = true;
+
+    SudokuField new_field = field;
+    new_field.set(coord, val);
+
+    SudokuSolver solver = SudokuSolver(new_field);
+    try {
+        solver.solve();
+    } catch (...) {
+        res = false;
+    }
+
+    return res;
 }
 
 bool SudokuSolver::is_only_place_in_horizon(int horizon, int num)
@@ -118,15 +167,8 @@ SudokuSolver::SudokuSolver(SudokuField &field) : field(field)
 
 void SudokuSolver::solve()
 {
-    int cnt = 0;
-
-
     while (left_to_do > 0) {
         int cur_left = left_to_do;
-
-        std::cout << "==============" << std::endl;
-        std::cout << "Step " << cnt << std::endl;
-        cnt++;
 
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
@@ -157,9 +199,7 @@ void SudokuSolver::solve()
         }
 
         if (cur_left == left_to_do) {
-            std::cout << "Invalid sudoku! Have several solutions. Cells left: " << left_to_do << std::endl;
-            field.print();
-            throw std::invalid_argument("Invalid sudoku!");
+            handle_bad_sudoku();
         }
 
         reduce();
